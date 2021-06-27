@@ -9,19 +9,21 @@
 
 import UIKit
 
-class CustomOperation: OperationQueue {
-    var stringForGenerate: String
-    
-    init(stringForGenerate: String) {
-        self.stringForGenerate = stringForGenerate
-        super.init()
-        maxConcurrentOperationCount = 1
-    }
 
-//        func main() {
-//
-//
-//    }
+
+class CustomOperation: Operation {
+    
+    var doBlock: (() -> Void)?
+    //    static var shared = CustomOperation()
+    
+    override init() {
+        super.init()
+    }
+    
+    override func main() {
+        print("block started")
+        doBlock?()
+    }
 }
 
 
@@ -31,8 +33,8 @@ class LogInViewController: UIViewController {
     
     var generatePswd = GeneratePassword()
     
-    let operation = CustomOperation(stringForGenerate: "1wwd1")
-    let queue = DispatchQueue.global(qos: .userInitiated)
+    var operation = CustomOperation()
+    
     let concurrentQueue = DispatchQueue(label: "concurrent", attributes: .concurrent)
     
     var image: UIImageView = {
@@ -84,14 +86,23 @@ class LogInViewController: UIViewController {
     @objc func generate () {
         if switcher {
             indicate.startAnimating()
-            operation.addOperation {
-                let _ = self.generatePswd.bruteForce(passwordToUnlock: "ww2")
-
+            self.generatePswd.switcher.toggle()
+            self.switcher.toggle()
+            concurrentQueue.async {
+                self.operation.main()
+                
             }
+            
         } else  {
-        
-                self.operation.cancelAllOperations()  
-            switcher = false
+            
+            switcher.toggle()
+            generatePswd.switcher.toggle()
+            DispatchQueue.main.async {
+                self.indicate.stopAnimating()
+                print(self.operation.isCancelled)
+                self.operation.cancel()
+            }
+            
         }
     }
     
@@ -106,7 +117,7 @@ class LogInViewController: UIViewController {
         stack.clipsToBounds = true
         return stack
     }()
-    //    ddd
+    
     
     lazy var textfieldOne: MyTextField = {
         let textField = MyTextField()
@@ -157,7 +168,11 @@ class LogInViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         
+        operation.doBlock = {
+            self.generatePswd.bruteForce(passwordToUnlock: "qw10")
+        }
         generatePswd.textDidChangedHandler = { [weak self] text in
+            
             DispatchQueue.main.async {
                 self?.textfieldOne.text = text
                 self?.indicate.stopAnimating()

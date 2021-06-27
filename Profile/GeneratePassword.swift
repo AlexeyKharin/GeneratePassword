@@ -1,15 +1,10 @@
-//
-//  LoginInspector.swift
-//  Navigation
-//
-//  Created by Alexey Kharin on 21.04.2021.
-//  Copyright © 2021 Artem Novichkov. All rights reserved.
 
 import UIKit
 
 class GeneratePassword {
+    var switcher: Bool = true
     var textDidChangedHandler: ((String) -> Void)?
-    func bruteForce(passwordToUnlock: String) -> String {
+    func bruteForce(passwordToUnlock: String) {
         let ALLOWED_CHARACTERS:   [String] = String().printable.map { String($0) }
         var arrayString  = [String]()
         var password: String = ""
@@ -22,14 +17,17 @@ class GeneratePassword {
             print(password)
             // Your stuff here
             ramdom = arrayString.randomElement()!
-           
+            guard !switcher else {
+                textDidChangedHandler?(ramdom)
+                return 
+              }
         }
         textDidChangedHandler?(ramdom)
         print(password)
-    return ramdom
+
     }
 }
-//}
+
 
 
 

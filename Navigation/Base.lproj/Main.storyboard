@@ -143,7 +143,7 @@
         <!--Log In View Controller-->
         <scene sceneID="2of-DT-ylW">
             <objects>
-                <viewController id="H2y-pw-Imy" customClass="LogInViewController" customModule="Navigation" customModuleProvider="target" sceneMemberID="viewController">
+                <viewController storyboardIdentifier="LogInViewController" id="H2y-pw-Imy" customClass="LogInViewController" customModule="Navigation" customModuleProvider="target" sceneMemberID="viewController">
                     <view key="view" contentMode="scaleToFill" id="Pmb-Bm-cbW">
                         <rect key="frame" x="0.0" y="0.0" width="414" height="896"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
