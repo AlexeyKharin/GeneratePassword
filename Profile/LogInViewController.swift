@@ -1,26 +1,20 @@
-
-
-
-
-
-
-
-
-
 import UIKit
-
-
 
 class CustomOperation: Operation {
     
     var doBlock: (() -> Void)?
-    //    static var shared = CustomOperation()
+    
+    var blockCanceld: (() -> Void)?
     
     override init() {
         super.init()
     }
     
     override func main() {
+        if isCancelled {
+            print("block repeated")
+            blockCanceld?()
+        }
         print("block started")
         doBlock?()
     }
@@ -28,15 +22,13 @@ class CustomOperation: Operation {
 
 
 
-
 class LogInViewController: UIViewController {
+    var queueOperation = OperationQueue()
     
     var generatePswd = GeneratePassword()
     
     var operation = CustomOperation()
-    
-    let concurrentQueue = DispatchQueue(label: "concurrent", attributes: .concurrent)
-    
+        
     var image: UIImageView = {
         let image = UIImageView()
         image.image = UIImage(named: "logo")
@@ -63,6 +55,7 @@ class LogInViewController: UIViewController {
     @objc func press () {
         let vc = ProfileViewController()
         navigationController?.pushViewController(vc, animated: true)
+        self.generatePswd.switcher = true
     }
     
     lazy var buyButtonGenerate: UIButton = {
@@ -83,26 +76,34 @@ class LogInViewController: UIViewController {
     
     var switcher: Bool = true
     
+    var i = -1
+    
     @objc func generate () {
         if switcher {
-            indicate.startAnimating()
-            self.generatePswd.switcher.toggle()
             self.switcher.toggle()
-            concurrentQueue.async {
+            self.generatePswd.switcher = true
+            self.indicate.startAnimating()
+            queueOperation.addOperation {
                 self.operation.main()
-                
             }
-            
         } else  {
+            self.generatePswd.switcher = true
+            self.switcher.toggle()
             
-            switcher.toggle()
-            generatePswd.switcher.toggle()
-            DispatchQueue.main.async {
-                self.indicate.stopAnimating()
-                print(self.operation.isCancelled)
-                self.operation.cancel()
+            while i < 0 {
+                i += 1
+                if !operation.isCancelled {
+                    queueOperation.addOperation {
+                        self.operation.main()
+                    }
+                }
             }
             
+            DispatchQueue.main.async {
+                print(self.operation.isCancelled)
+                print(self.operation.isFinished)
+            }
+            operation.cancel()
         }
     }
     
@@ -117,7 +118,6 @@ class LogInViewController: UIViewController {
         stack.clipsToBounds = true
         return stack
     }()
-    
     
     lazy var textfieldOne: MyTextField = {
         let textField = MyTextField()
@@ -165,20 +165,41 @@ class LogInViewController: UIViewController {
         return sv
     }()
     
+    lazy var generatePswdBlock = BlockOperation(block: {
+        self.generatePswd.switcher = false
+        self.generatePswd.bruteForce(passwordToUnlock: "qw10")
+    })
+    
     override func viewDidLoad() {
         super.viewDidLoad()
+  
+        queueOperation.name = "My Custom Queue"
+        queueOperation.maxConcurrentOperationCount = 1
         
         operation.doBlock = {
+            DispatchQueue.main.async {
+            self.indicate.startAnimating()
+            }
+            self.generatePswd.switcher = false
             self.generatePswd.bruteForce(passwordToUnlock: "qw10")
         }
+        
+        operation.blockCanceld = {
+            DispatchQueue.main.async {
+            self.indicate.startAnimating()
+            }
+            self.generatePswd.switcher = false
+            self.generatePswd.bruteForce(passwordToUnlock: "qw10")
+        }
+        
         generatePswd.textDidChangedHandler = { [weak self] text in
-            
             DispatchQueue.main.async {
                 self?.textfieldOne.text = text
                 self?.indicate.stopAnimating()
                 self?.textfieldOne.isSecureTextEntry = false
             }
         }
+        
         view.backgroundColor = .white
         view.addSubview(scrollView)
         scrollView.addSubview(containerView)
